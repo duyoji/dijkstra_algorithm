@@ -170,6 +170,38 @@ config.color = {
         }
     }
 
+    /**
+     * 開始マスと終点マスのデータを取得することを想定
+     * @param  {[type]} type config.mass.TYPE 
+     * @return {[type]}      [description]
+     */
+    function getMassDataWithType(type) {
+        var row;    // 行
+        var column; // 列
+        var mass;
+        var massObj = null; // {row : 0, column : 0};
+
+        for (row = 0; row < config.mass.length; row++) {
+            for (column = 0; column < config.mass.length; column++) {
+                mass = masses[row][column];
+                if ( mass === type ) {
+                    massObj = {
+                        row    : row,
+                        column : column
+                    };
+
+                    break;
+                }
+            }
+
+            if (massObj) break;
+        }
+
+        if (!massObj) throw new Error('error getStartMass');
+
+        return massObj;
+    }
+
     // マスの配列初期化 -------------------------------------
     function createMasses() {
         var row;    // 行
@@ -221,17 +253,76 @@ config.color = {
     }
 
     function traceroute() {
-        var row;    // 行
-        var column; // 列
+        var startMass = getMassDataWithType( config.mass.TYPE.START );
+        var goalMass  = getMassDataWithType( config.mass.TYPE.GOAL );
+        traceCounts = [];
 
-        for (row = 0; row < config.mass.length; row++) {
-            for (column = 0; column < config.mass.length; column++) {
-                
-            }
+        var i,n;
+        for (i = 0, n = config.mass.length; i < n; i++) {
+            traceCounts.push([]);
         }
+
+        var isFinish = false;
+        // console.log(startMass, goalMass, traceCounts);
+
+        // 探索処理開始
+        function traceCount(row, column, count) {
+            // 既にゴールまでたどり着いていたら処理を抜ける
+            if (isFinish) {
+                console.log(console.log('exit 0'));
+                return;
+            }
+
+            // マス範囲外にアクセスしようとしていたら処理を抜ける
+            if ( row < 0 || row >= config.mass.length || column < 0 || column >= config.mass.length ) {
+                console.log('exit 1');
+                return;
+            }
+
+            // 特定マスに既にカウントが入っていて渡されたカウントよりも小さい場合は処理を抜ける
+            if (traceCounts[row][column] === 0 ||  traceCounts[row][column] < count) {
+                console.log('exit 2 : ' + traceCounts[row][column]);
+                return;
+            }
+
+
+            console.log(row, column, count);
+
+            // ブロックマスだったら止める
+            // if (masses[row][column]) {
+            //     return;
+            // }
+
+            
+
+            traceCounts[row][column] = count;
+
+            if (row === goalMass[row] && column === goalMass[column]) {
+                console.log('exit 3');
+                isFinish = true;
+                return;
+            }
+
+            // 現在のマスの上下左右のマスのカウントをする
+            
+            traceCount(row - 1, column, count+1); // 上
+            traceCount(row + 1, column, count+1); // 下
+            // traceCount(row, column - 1, count+1); // 左
+            // traceCount(row, column + 1, count+1); // 右
+        }
+
+        traceCount(startMass['row'], startMass['column'], 0);
+        console.log( JSON.stringify( traceCounts ) );
+
+        // for (row = 0; row < config.mass.length; row++) {
+        //     for (column = 0; column < config.mass.length; column++) {
+                
+        //     }
+        // }
     }
 
     function drawNumber() {
+        return;
         var row;    // 行
         var column; // 列
 
@@ -246,6 +337,9 @@ config.color = {
             }
         }
     }
+
+
+
 
     // キャンパスの描画を消す -------------------------------
     function clearCanvas() {

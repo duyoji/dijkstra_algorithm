@@ -39,6 +39,7 @@ config.color = {
     var context     = null;
     var masses      = [];
     var traceCounts = [];
+    var nodes       = [];
 
     window.addEventListener('load', main);
 
@@ -59,6 +60,7 @@ config.color = {
 
         // マス情報初期化, 作成 -----------------------------
         createMasses();
+        createNodes();
         // createMassView();
         
 
@@ -222,6 +224,50 @@ config.color = {
         }
     }
 
+    function createNodes() {
+        var row;    // 行
+        var column; // 列
+        var node;
+
+        for (row = 0; row < config.mass.length; row++) {
+            nodes.push( [] );
+            for (column = 0; column < config.mass.length; column++) {
+                node = createNode(row, column);
+                nodes[row].push( node );
+            }
+        }
+    }
+
+    function createNode(row, column) {
+        var top, right, bottom, left;
+        top = right = bottom = left = null;
+
+        if (row - 1 >= 0)                    top    = {row : row - 1, column : column};
+        if (row + 1 < config.mass.length)    bottom = {row : row + 1, column : column};
+        if (column - 1 >= 0 )                left   = {row : row, column : column - 1};
+        if (column + 1 < config.mass.length) right  = {row : row, column : column + 1};
+
+        var node = {
+            cost   : 1,     // 全ての距離は1で固定,
+            total  : null,  // 最短距離
+            done   : false, // 確定フラグ
+            // row    : row,
+            // column : column,
+            top    : top,
+            bottom : bottom,
+            left   : left,
+            right  : right,
+        };
+
+        if (masses[row][column] === config.mass.TYPE.START) {
+            node.done  = true;
+            node.total = 0;
+        }
+        
+
+        return node;
+    }
+
     // マス配列情報を元にマス目を作成 -------------------------
     function createMassView() {
         var row;    // 行
@@ -253,72 +299,52 @@ config.color = {
     }
 
     function traceroute() {
+
+        // console.log(JSON.stringify(nodes));
+        // console.log(nodes);
+        // return;
+
         var startMass = getMassDataWithType( config.mass.TYPE.START );
         var goalMass  = getMassDataWithType( config.mass.TYPE.GOAL );
         traceCounts = [];
 
-        var i,n;
-        for (i = 0, n = config.mass.length; i < n; i++) {
-            traceCounts.push([]);
-        }
+        // var i,n;
+        // for (i = 0, n = config.mass.length; i < n; i++) {
+        //     traceCounts.push([]);
+        // }
 
         var isFinish = false;
         // console.log(startMass, goalMass, traceCounts);
 
-        // 探索処理開始
-        function traceCount(row, column, count) {
-            // 既にゴールまでたどり着いていたら処理を抜ける
-            if (isFinish) {
-                console.log(console.log('exit 0'));
-                return;
+        var currentNode = {
+            row    : startMass['row'],
+            column : startMass['column']
+        };
+
+        // console.log(currentNode);
+        var row, column, node, top, right, bottom, left, nextNode;
+        while(!isFinish) {
+            row    = currentNode['row'];
+            column = currentNode['column'];
+            node   = nodes[row][column]
+
+            // 上 ------------------------------------
+            if (node.top) {
+                top = nodes[ node.top.row ][node.top.column]
+                if (!top.done) {
+                    
+                }
+                console.log(top);
             }
 
-            // マス範囲外にアクセスしようとしていたら処理を抜ける
-            if ( row < 0 || row >= config.mass.length || column < 0 || column >= config.mass.length ) {
-                console.log('exit 1');
-                return;
-            }
-
-            // 特定マスに既にカウントが入っていて渡されたカウントよりも小さい場合は処理を抜ける
-            if (traceCounts[row][column] === 0 ||  traceCounts[row][column] < count) {
-                console.log('exit 2 : ' + traceCounts[row][column]);
-                return;
-            }
-
-
-            console.log(row, column, count);
-
-            // ブロックマスだったら止める
-            // if (masses[row][column]) {
-            //     return;
-            // }
-
+            // 右 ------------------------------------
             
-
-            traceCounts[row][column] = count;
-
-            if (row === goalMass[row] && column === goalMass[column]) {
-                console.log('exit 3');
-                isFinish = true;
-                return;
-            }
-
-            // 現在のマスの上下左右のマスのカウントをする
+            // 下 ------------------------------------
             
-            traceCount(row - 1, column, count+1); // 上
-            traceCount(row + 1, column, count+1); // 下
-            // traceCount(row, column - 1, count+1); // 左
-            // traceCount(row, column + 1, count+1); // 右
+            // 左 ------------------------------------
+            
+            isFinish = true;
         }
-
-        traceCount(startMass['row'], startMass['column'], 0);
-        console.log( JSON.stringify( traceCounts ) );
-
-        // for (row = 0; row < config.mass.length; row++) {
-        //     for (column = 0; column < config.mass.length; column++) {
-                
-        //     }
-        // }
     }
 
     function drawNumber() {

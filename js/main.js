@@ -4,12 +4,6 @@ var config = {};
 config.fps = 60; // なめらかなアニメーションにしたい場合は30 or 60を入れる
 // config.gameSpeed = 10; // デフォルト値 2,3と入れるとスピードも2,3倍する
 
-config.canvas = {
-    // iphone4サイズ
-    width   : 400,
-    height  : 400,
-};
-
 config.mass = {
     size   : 20,
     length : 20,
@@ -19,6 +13,12 @@ config.mass = {
         START     : 3, // スタート
         GOAL      : 4  // ゴール
     }
+};
+
+config.canvas = {
+    // iphone4サイズ
+    width   : config.mass.size * config.mass.length,
+    height  : config.mass.size * config.mass.length,
 };
 
 config.color = {
@@ -38,7 +38,6 @@ config.color = {
     // member --------------------
     var context     = null;
     var masses      = [];
-    var traceCounts = [];
     var nodes       = [];
 
     window.addEventListener('load', main);
@@ -49,8 +48,8 @@ config.color = {
         context           = canvas.getContext('2d');
         canvas.width      = config.canvas.width;
         canvas.height     = config.canvas.height;
-        
-        
+
+
         // キャンパスイベント -------------------
         addCanvasEvent( canvas );
 
@@ -62,7 +61,7 @@ config.color = {
         createMasses();
         createNodes();
         // createMassView();
-        
+
 
         // 更新処理スタート
         (function _update(){
@@ -73,12 +72,10 @@ config.color = {
         })();
     }
 
-
     // キャンパス イベント ---------------------------
     function addCanvasEvent (canvas) {
         canvas.addEventListener('mousedown', start, false);
         canvas.addEventListener('mousemove', move,  false);
-        // canvas.addEventListener('click',     click, false);
         window.addEventListener('mouseup',   stop,  false);
 
         var isDrag   = false;
@@ -107,20 +104,11 @@ config.color = {
             setLastMass(row, column);
         }
 
-        /*
-        function click(event) {
-            var row    = Math.floor( event.clientY / config.mass.size );
-            var column = Math.floor( event.clientX / config.mass.size );
-            if ( isLastMass(row, column) ) return;
-
-            toggleMassStateWithRowAndColumn(row, column);
-            resetLastMass();
-        }
-        */
-
         function stop(event) {
             isDrag = false;
             resetLastMass();
+
+            checkBlockMasses();
         }
 
         // ----------------------------------------------------
@@ -174,7 +162,7 @@ config.color = {
 
     /**
      * 開始マスと終点マスのデータを取得することを想定
-     * @param  {[type]} type config.mass.TYPE 
+     * @param  {[type]} type config.mass.TYPE
      * @return {[type]}      [description]
      */
     function getMassDataWithType(type) {
@@ -251,8 +239,8 @@ config.color = {
             cost   : 1,     // 全ての距離は1で固定,
             total  : null,  // 最短距離
             done   : false, // 確定フラグ
-            // row    : row,
-            // column : column,
+            row    : row,
+            column : column,
             top    : top,
             bottom : bottom,
             left   : left,
@@ -263,7 +251,6 @@ config.color = {
             node.done  = true;
             node.total = 0;
         }
-        
 
         return node;
     }
@@ -293,64 +280,133 @@ config.color = {
 
                     context.fillRect(x, y, config.mass.size, config.mass.size);
                 }
-                // drawNumber(row+1, column);
             }
         }
     }
 
+    function checkBlockMasses () {
+        var row;    // 行
+        var column; // 列
+        var x, y, mass;
+
+        for (row = 0; row < config.mass.length; row++) {
+            for (column = 0; column < config.mass.length; column++) {
+                mass = masses[row][column];
+                if ( mass === config.mass.TYPE.NON_BLOCK || mass === config.mass.TYPE.GOAL ) {
+                    nodes[row][column].done = false;
+                } else {
+                    nodes[row][column].done = true;
+                }
+            }
+        }
+
+    }
+
     function traceroute() {
-
-        // console.log(JSON.stringify(nodes));
-        // console.log(nodes);
-        // return;
-
         var startMass = getMassDataWithType( config.mass.TYPE.START );
         var goalMass  = getMassDataWithType( config.mass.TYPE.GOAL );
-        traceCounts = [];
-
-        // var i,n;
-        // for (i = 0, n = config.mass.length; i < n; i++) {
-        //     traceCounts.push([]);
-        // }
-
-        var isFinish = false;
-        // console.log(startMass, goalMass, traceCounts);
 
         var currentNode = {
             row    : startMass['row'],
             column : startMass['column']
         };
 
-        // console.log(currentNode);
         var row, column, node, top, right, bottom, left, nextNode;
-        while(!isFinish) {
+        var i, n;
+
+        while(true) {
+            top = right = bottom = left = minTotal = null;
             row    = currentNode['row'];
             column = currentNode['column'];
-            node   = nodes[row][column]
+            node   = nodes[row][column];
 
             // 上 ------------------------------------
             if (node.top) {
-                top = nodes[ node.top.row ][node.top.column]
+                top = nodes[ node.top.row ][node.top.column];
                 if (!top.done) {
-                    
+                    if (!top.total || top.total > node.total + top.cost) {
+                        top.total = node.total + top.cost;
+                    }
                 }
-                console.log(top);
             }
 
             // 右 ------------------------------------
-            
+            if (node.right) {
+                right = nodes[ node.right.row ][node.right.column]
+                if (!right.done) {
+                    if (!right.total || right.total > node.total + right.cost) {
+                        right.total = node.total + right.cost;
+                    }
+                }
+            }
+
             // 下 ------------------------------------
-            
+            if (node.bottom) {
+                bottom = nodes[ node.bottom.row ][node.bottom.column]
+                if (!bottom.done) {
+                    if (!bottom.total || bottom.total > node.total + bottom.cost) {
+                        bottom.total = node.total + bottom.cost;
+                    }
+                }
+            }
+
             // 左 ------------------------------------
-            
-            isFinish = true;
+            if (node.left) {
+                left = nodes[ node.left.row ][node.left.column]
+                if (!left.done) {
+                    if (!left.total || left.total > node.total + left.cost) {
+                        left.total = node.total + left.cost;
+                    }
+                }
+            }
+
+            nextNode = getNextNode();
+            // 次の検索が無くなったら終了 -----------------------
+            if (!nextNode) {
+                break;
+            }
+
+            nextNode.done = true;
+            currentNode['row']    = nextNode.row;
+            currentNode['column'] = nextNode.column;
         }
     }
 
-    function drawNumber() {
-        return;
+    function getNextNode() {
         var row;    // 行
         var column; // 列
+        var mass;
+        var node     = null;
+        var nextNode = null;
+        var minTotal = null;
+
+        for (row = 0; row < config.mass.length; row++) {
+            for (column = 0; column < config.mass.length; column++) {
+                mass = masses[row][column];
+                if ( mass === config.mass.TYPE.BLOCK ) {
+                    continue;
+                }
+
+                node = nodes[row][column];
+                if (node.done || !node.total) {
+                    continue;
+                }
+
+                if (!minTotal || minTotal > node.total) {
+                    minTotal = node.total;
+                    nextNode = node;
+                }
+
+            }
+        }
+
+        return nextNode;
+    }
+
+    function drawNumber() {
+        var row;    // 行
+        var column; // 列
+        var total;
 
         for (row = 0; row < config.mass.length; row++) {
             for (column = 0; column < config.mass.length; column++) {
@@ -358,20 +414,18 @@ config.color = {
                 var x = column * config.mass.size;
                 context.font = "12pt Arial";
                 context.fillStyle = config.color.block;
+                total = nodes[row][column].total || 0;
 
-                context.fillText("1", x, y);  
+                context.fillText(total, x, y);
             }
         }
     }
-
-
-
 
     // キャンパスの描画を消す -------------------------------
     function clearCanvas() {
         context.clearRect(0, 0, config.canvas.width, config.canvas.height);
     }
-    
+
 
     // 更新処理 --------------------------------------------
     function update() {

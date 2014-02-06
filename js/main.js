@@ -361,8 +361,8 @@ config.color = {
             }
 
             nextNode = getNextNode();
-            // 次の検索が無くなったら終了 -----------------------
-            if (!nextNode) {
+            // 次の検索が無くなったら or ゴールについたら 終了 -----------------------
+            if (!nextNode || ( nextNode['row'] === goalMass['row'] && nextNode['column'] === goalMass['column'] ) ) {
                 break;
             }
 
@@ -412,7 +412,7 @@ config.color = {
             for (column = 0; column < config.mass.length; column++) {
                 var y = (row + 1) * config.mass.size;
                 var x = column * config.mass.size;
-                context.font = "12pt Arial";
+                context.font = "8pt Arial";
                 context.fillStyle = config.color.block;
                 total = nodes[row][column].total || 0;
 
